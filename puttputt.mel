@@ -1,0 +1,144 @@
+//Brittany DiGenova
+//Visual Effects Project 3
+//4/4/2016
+
+//Open Window 
+if (`window -exists myWindow`) deleteUI myWindow;
+if (`window -exists myWindow`) windowPref -remove myWindow;
+window -title "Putt Putt" -widthHeight 400 200 myWindow;
+     columnLayout;
+     
+     floatSliderGrp -label "Putter Angle" -field true
+       -minValue 0.0 -maxValue 360.0 -value 0.0 -dragCommand "angleClub()"
+     angles;
+     
+     floatSliderGrp -label "Swing Angle" -field true
+         -minValue 5.0 -maxValue 30.0 -value 5.0 -dragCommand "swing_angle_Club()"
+     swing;
+  
+    button -label "New hole" -command "newHole()";
+    button -label "Putt" -command "runPutt()";
+    button -label "Pause" -command "play -st off";
+    button -label "Resume" -command "play -st on";
+showWindow;
+
+
+//Functions
+proc newHole() {
+    
+    //Delete old green
+    select -r green;
+    doDelete;
+    
+    //Create green
+    polyCube -w 40 -h 40 -d 10 -sx 40 -sy 40 -sz 1 -ax 0 0 1 -cuv 4 -ch 1;
+    
+    //Delete bottom portion and one square for hole 
+    select -r pCube3.f[0:1639] pCube3.f[3240:3359] ;
+    doDelete;
+    select -r pCube3.f[1352] ;
+    doDelete;
+    
+    //Select all faces to extrude
+    hilite pCube3.f[0:1598] ;
+    selectMode -component ;
+    select -r pCube3.f[0:1598] ;
+    polyExtrudeFacet -constructionHistory 1 -keepFacesTogether 1 -pvx 0 -pvy 5 -pvz 0 -divisions 1 -twist 0 -taper 1 -off 0 -thickness 0 -smoothingAngle 30 pCube3.f[0:1598];
+    
+    //Extrude the green with thickness of 3
+    setAttr "polyExtrudeFace1.thickness" 3;
+    
+    //Translate cube to be flush to z axis
+    select -r pCube3 ;
+    setAttr "pCube3.translateY" -8;
+    
+    //Rename green
+    rename |pCube3 "green" ;
+
+    //Shade green
+    sets -e -forceElement lambert6SG;
+    setAttr "greenColor.color" -type double3 0.110727 0.352941 0.150311 ;
+    setAttr "greenColor.ambientColor" -type double3 0.110727 0.352941 0.150311 ;   
+    
+    //Apply passive dynamics to green
+    rigidBody -passive  -name "green#" -m 1 -dp 0 -sf 0.2 -df 0.2 -b 0.6 -l 0 -tf 200 -iv 0 0 0 -iav 0 0 0 -c 0 -pc 0 -i 0 0 0 -imp 0 0 0 -si 0 0 0 -sio none ;
+    
+
+    
+    float $x = rand(-15, 15);
+    float $z = rand(-15, 15);
+    
+    setAttr "green.translateX" $x;
+    setAttr "green.translateZ" $z;
+
+    setAttr "flag.translateX" $x;
+    setAttr "flag.translateZ" $z;
+    
+    //Set putter and ball attributes
+    setAttr "club.translateX" 0;
+    setAttr "club.translateZ" 0;
+    
+    setAttr "ball.translateX" 0;
+    setAttr "ball.translateY" 0.25;
+    setAttr "ball.translateZ" 0;
+
+    
+    
+    select flag;
+    
+    currentTime 1;
+
+}  
+     
+
+proc angleClub() {
+    
+    currentTime 1;
+    float $clubAngle = `floatSliderGrp -q -value angles`;   
+    setAttr "club.rotateY" $clubAngle;
+
+    
+}
+
+proc swing_angle_Club() {
+    
+    currentTime 1;
+    float $swing_Angle = `floatSliderGrp -q -value swing`;   
+    setAttr "club.rotateX" $swing_Angle;    
+}
+
+
+proc runPutt() {
+    
+    currentTime 1;
+    setKeyframe "club.rotateX";
+    setKeyframe "club.rotateY";
+    
+    select -r clubSwing1 ;
+    doDelete ;
+    
+    select -r ballBody1 ;
+    doDelete ;
+    
+    //Add dynamics for club to swing
+    select -r club;
+    rigidBody -passive  -name "clubSwing#" -m 1 -dp 0 -sf 0.2 -df 0.2 -b 0.6 -l 0 -tf 200 -iv 0 0 0 -iav 0 0 0 -c 0 -pc 0 -i 0 0 0 -imp 0 0 0 -si 0 0 0 -sio none ;
+    select -r ball ;
+    rigidBody -active  -name "ballBody#" -m 1 -dp 0 -sf 0.2 -df 0.2 -b 0.6 -l 0 -tf 200 -iv 0 0 0 -iav 0 0 0 -c 0 -pc 0 -i 0 0 0 -imp 0 0 0 -si 0 0 0 -sio none ;
+    
+    select -r flag;
+ 
+    float $swing_Angle = `floatSliderGrp -q -value swing`;   
+ 
+
+    
+    currentTime 20;
+    setAttr "club.rotateX" ( $swing_Angle * -1);
+    setKeyframe "club.rotateX";
+    
+    currentTime 1;
+    play -st on;
+        
+}
+
+

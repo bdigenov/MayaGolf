@@ -1,0 +1,81 @@
+if (`window -exists myWindow`) deleteUI myWindow;
+if (`window -exists myWindow`) windowPref -remove myWindow;
+window -title "Putt Putt" -widthHeight 400 200 myWindow;
+     columnLayout;
+     
+     floatSliderGrp -label "Putter Angle" -field true
+       -minValue 0.0 -maxValue 360.0 -value 0.0 -dragCommand "rotateClub()"
+     angles;
+     
+     floatSliderGrp -label "Swing Angle" -field true
+         -minValue 5.0 -maxValue 30.0 -value 5.0 -dragCommand "rotateClub()"
+     swing;
+  
+    button -label "New hole" -command "newHole()";
+    button -label "Putt" -command "runPutt()";
+    button -label "Pause" -command "play -st off";
+    button -label "Resume" -command "play -st on";
+showWindow;
+
+
+proc newHole() {
+    //Set  playback to the beginning    
+    currentTime 1;
+      
+    float $x = rand(-10, 10);
+    float $z = rand(-10, 10);
+    
+    setAttr "Hole.translateX" $x;
+    setAttr "Hole.translateZ" $z;    
+}
+     
+
+proc rotateClub() {
+    
+    select club;
+    
+    cutKey -time ":";    
+    currentTime 1;
+    
+    float $clubAngle = `floatSliderGrp -q -value angles`;
+    float $swing_Angle = `floatSliderGrp -q -value swing`;
+    
+    setAttr "club.rotateY" $clubAngle;
+    setAttr "club.rotateX" $swing_Angle;
+    
+    setKeyframe  "club.rotateX";
+    setKeyframe  "club.rotateY";
+    
+    currentTime 20;
+    setAttr "club.rotateX" ($swing_Angle * -1);
+    setKeyframe "club.rotateX";
+    
+    currentTime 1;
+    
+}
+
+
+proc runPutt() {
+ 
+    currentTime 1;
+    play -st on;
+    
+    while ( currentTime < 100 ) {
+        print $currentTime;
+    }
+    float $ballLocationX = `getAttr "ball.translateX"`;
+    float $ballLocationZ = `getAttr "ball.translateZ"`;
+    
+    float $holeLocationX = `getAttr "Hole.translateX"`;
+    float $holeLocationZ = `getAttr "Hole.translateZ"`;
+    
+    if ( $ballLocationX < $holeLocationX + 1 && $ballLocationX > $holeLocationX - 1) {
+        if ($ballLocationZ < $holeLocationZ + 1 && $ballLocationZ > $holeLocationZ - 1) {
+            setAttr "ball.translateY" -3;
+        }
+    }
+
+    
+}
+
+
